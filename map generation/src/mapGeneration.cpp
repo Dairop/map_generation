@@ -97,7 +97,7 @@ sf::Texture generateNoiseHeightmap(sf::Vector2f MAP_SIZE, int resolution, std::v
 		//p4 = 0.5 * perlin((x + 0.31) * resolution / s * 30, (y + 0.31) * resolution / s * 30, seeds[3]) + 0.5;
 		//p5 = 0.5 * perlin((x + 0.73) * resolution / s * 20, (y + 0.73) * resolution / s * 20, seeds[0]) + 0.5;
 
-		c = ((p/1 + p1/1 + p2/1.8 + p3/4 + p4/6 + p5/7) / (1/1 + 1/1 + 1/1.8 + 1/4 + 1/6 + 1/7)) * 255;
+		c = ((p/1 + p1/1 + p2/1.8 + p3/4 + p4/6 + p5/7) / (1/1 + 1/1 + 1/1.8 + 1/4 + 1/6 + 1/7)) * 205;
 		c = fmin(fmax(0, c), 255);
 
 		P->changeColor(sf::Color(c, c, c), noiseIm);

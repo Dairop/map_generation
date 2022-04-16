@@ -323,7 +323,7 @@ int startGeneration() {
 	else { //generate fictional map
 		float advancement = 0;
 		std::thread trackOfAdvancement(printAdvancement, std::ref(advancement));
-		heightMapIm = newMap(SIZE, mapRes, 30, std::ref(advancement)).copyToImage();
+		heightMapIm = newMap(SIZE, mapRes, 10, std::ref(advancement)).copyToImage();
 		trackOfAdvancement.join();
 		mapTx = heightToColors(heightMapIm);
 		mapIm = mapTx.copyToImage();

@@ -75,7 +75,7 @@ void Button::update(sf::Vector2u screenSize, int menuSize) {
 };
 
 bool Button::clicked(Mouse& UserMouse) {
-	if (UserMouse.startPressing) {//sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+	if (UserMouse.startPressing) {
 
 		int x = rectScreen.left; int y = rectScreen.top;
 		int xs = rectScreen.width; int ys = rectScreen.height;

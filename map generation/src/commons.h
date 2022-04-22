@@ -24,8 +24,6 @@
 
 
 
-sf::Color HSVtoRGB(float H, float S, float V);   // h:0-360.0, s:0.0-1.0, v:0.0-1.0
-sf::Vector3f RGBtoHSV(sf::Color RGB);
 bool equalToVectu(sf::Vector2u& a, sf::Vector2u& b);
 
 void resizeImage(const sf::Image& originalImage, sf::Image& resizedImage);
@@ -44,5 +42,16 @@ public:
 
 	Mouse(bool p1 = false, bool pl = false, sf::Vector2i pos = sf::Vector2i(0,0)) : isPressed(p1), isLeftPressed(pl), pos(pos) {};
 };
+
+
+struct ColorHSV { // h:0-360.0, s:0.0-1.0, v:0.0-1.0
+	float h;
+	float s;
+	float v;
+};
+
+sf::Color HSVtoRGB(float H, float S, float V);
+ColorHSV RgbToHsv(sf::Color rgb);
+
 
 #include "buttons.h"

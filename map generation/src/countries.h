@@ -5,7 +5,7 @@ class Province;
 class Country;
 
 
-void createCountryFromIsolatedRebels(Province* StartingProv, Country* From, float prcntOfCountry /*0 to 100, only in accessible provinces*/, std::vector<Country*>& countries, sf::Image& map);
+void createCountryFromIsolatedRebels(Province* StartingProv, Country* From, float depthInCountry /*0 to 1, only in accessible provinces*/, std::vector<Country*>& countries, sf::Image& map);
 
 
 
@@ -20,7 +20,7 @@ public:
 
 	int surface = 0;
 	float militaryPower = 1;
-	int aggressivity = rand() % 21; //20 = attack at each update, 0 = will never attack
+	int aggressivity = 4 + rand() % 9 + rand() % 9; //20 = attack at each update, 0 = will never attack
 	float stability = 0;
 
 	void init(Province*& StartingProvince);

@@ -4,11 +4,12 @@
 
 
 
-void createCountryFromIsolatedRebels(Province* StartingProv, Country* From, float prcntOfCountry, std::vector<Country*>& countries, sf::Image& map) {
+void createCountryFromIsolatedRebels(Province* StartingProv, Country* From, float depthInCountry, std::vector<Country*>& countries, sf::Image& map) {
 	Country* C = new Country;
 	C->init(StartingProv);
 	C->color = HSVtoRGB(rand() % 360, 0.5 + 0.1 * (rand() % 5), 0.7 + 0.05 * (rand() % 6));
 	C->capitalCity->changeColor(C->color, map);
+	C->FindBorderProvinces();
 	countries.push_back(C);
 
 	if (From != nullptr) {
@@ -16,10 +17,29 @@ void createCountryFromIsolatedRebels(Province* StartingProv, Country* From, floa
 		std::vector<Province*> provs;
 		StartingProv->controlledBy = From;
 		C->provinces.clear(); //the capital city will be added again in the function allConnectedProvinesFromSameCountry
-		StartingProv->allConnectedProvinesFromSameCountry(From->provinces.size() * prcntOfCountry, C->provinces);
+		std::cout << 1000 * depthInCountry << "p ";
+		StartingProv->allConnectedProvinesFromSameCountry(From->provinces.size() * depthInCountry, C->provinces);
 
 		for (int p = 0; p < C->provinces.size(); p++) {
 			C->provinces[p]->changeCountry(C, map);
+		}
+
+		From->FindBorderProvinces();
+
+
+		int maxDepth = From->provinces.size();
+
+		From->provincesConnectedToCapital.clear();
+		From->capitalCity->allConnectedProvinesFromSameCountry(maxDepth, From->provincesConnectedToCapital);
+		for (int borderi = 0; borderi < C->borderProvinces.size(); borderi++) {
+			for (int i = 0; i < From->provinces.size(); i++) {
+				Province* P2 = From->provinces[i];
+				//Country secedes if it is not easily connected to it capital city
+				if (!P2->isConnectedToCapital()) {
+					float importance = rand() % 70 + 10;
+					createCountryFromIsolatedRebels(P2, From, importance / 100, countries, map);
+				}
+			}
 		}
 
 		return;
@@ -105,22 +125,53 @@ void Country::checkIfStillExists(std::vector<Country*>& countries) {
 
 void Country::checkIfProvinceIsSecessing(Province* P, std::vector<Country*>& countries, sf::Image& map){
 	// "this" is the loosing country
+	// P is the province that was lost to P->controlledBy
 
 	//check if any of the neighbors is isolated, if so let it create it own country
-	int maxDepth = this->provinces.size();
+	int maxDepth = this->provinces.size(); //increasing the denominator makes countries to look more round
 	std::vector<Province*> connectedProvs;
 	this->provincesConnectedToCapital.clear();
 	this->capitalCity->allConnectedProvinesFromSameCountry(maxDepth, this->provincesConnectedToCapital);
 
-	for (int i = 0; i < P->neighbors.size(); i++) {
-		Province* P2 = P->neighbors[i];
-		if ((P2->controlledBy == nullptr) or (P2->controlledBy != this)) { continue; }
-		//Country secedes if it is not easily connected to it capital city
-		if (!P2->isConnectedToCapital()) {
-			createCountryFromIsolatedRebels(P2, this, 1, countries, map);
-			//return;
+	int nbOfNotConnectedProvinces = this->provinces.size() - this->provincesConnectedToCapital.size();
+
+	if (nbOfNotConnectedProvinces > 10) {
+		for (int i = 0; i < this->provinces.size(); i++) {
+			Province* P2 = this->provinces[i];
+			if ((P2->controlledBy == nullptr) or (P2->controlledBy != this)) { continue; }
+			//Country secedes if it is not easily connected to it capital city
+			if (!P2->isConnectedToCapital()) {
+				float importance = rand() % 70 + 10;
+
+				createCountryFromIsolatedRebels(P2, this, importance/100, countries, map);
+
+				//Country* newCountry = P2->controlledBy;
+				//if (newCountry->provinces.size() < 5) {
+					//;
+				//}
+				//return;
+			}
+
 		}
-		
+	} else {
+		Country* countryWinningTheProvince;
+		for (int i = 0; i < this->provinces.size(); i++) {
+			Province* P2 = this->provinces[i];
+			if ((P2->controlledBy == nullptr) or (P2->controlledBy != this)) { continue; }
+			//Country secedes if it is not easily connected to it capital city
+			if (!P2->isConnectedToCapital()) {
+				//give it to a neighbor if the new rebel state will be too small to exit. 
+				//If no neighbor, give it to the country that won the battle
+				countryWinningTheProvince = P->controlledBy;
+				for (int nei = 0; ((nei < P2->neighbors.size()) && (countryWinningTheProvince == P->controlledBy)); nei++) {
+					if (P2->neighbors[nei]->controlledBy != nullptr && P2->neighbors[nei]->controlledBy != this) {
+						countryWinningTheProvince = P2->neighbors[nei]->controlledBy;
+						break;
+					}
+				}
+				P2->changeCountry(countryWinningTheProvince, map);
+			}
+		}
 	}
 
 }
@@ -171,21 +222,16 @@ void Country::expand(sf::Image& map, std::vector<Country*>& countries) {
 		C2->calculateSurface();
 		C2->calculatePower();
 		power2 = C2->militaryPower;
-		//if (isnan(power2)) return;
 	}
 	else {
-		//inactive bot playing
+		//inactive prov playing
 		power2 = Pn->surfaceArea;
 	}
-
-	//if (rand() % 100 == 0 && C2 != nullptr) { std::cout << surface << " " << C2->surface << "      "; }
 
 
 	//evaluate if a province is easy to capture or not, give a score 'prcBorders' from 0 to 1 accordingly
 	int nbBorders = 0;
-	//std::cout << "   " << Pn->neighbors.size() << "n ";
 	for (int i = 0; i < Pn->neighbors.size(); i++) {
-		//std::cout << i << " ";
 		if (Pn->neighbors[i]->controlledBy == this) nbBorders++;
 	}
 	float prcBorders = (float) nbBorders / Pn->neighbors.size();
@@ -209,7 +255,6 @@ void Country::expand(sf::Image& map, std::vector<Country*>& countries) {
 			}
 			else {
 				Looser->checkIfProvinceIsSecessing(LooserProv, countries, map);
-				Looser->checkIfStillExists(countries);
 				//don't loose as much stability because they didn't attack
 				Looser->stability -= 1;
 			}
@@ -231,7 +276,7 @@ void Country::expand(sf::Image& map, std::vector<Country*>& countries) {
 
 		//is the battle won ?                     malus for the defending country
 		if ((1 + float(rand() % 25) / 20) * power2 * prcBorders * 0.7 >= militaryPower
-				|| rand()%50==0) {					//or win by luck
+				|| rand()%50==0) {	//or win by luck
 			LooserProv = Pr; Looser = this;
 			WinnerProv = Pn; Winner = C2;
 			

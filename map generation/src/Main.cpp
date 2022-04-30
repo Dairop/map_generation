@@ -104,8 +104,6 @@ void growCountries(std::vector<Province*>& provinces, std::vector<Country*>& cou
 		countries[n]->stability *= 1 - countries[n]->aggressivity/50; //stability tends to 0 for most countries if no attack is made
 	}
 
-	map.saveToFile("../img/map.png");
-
 	//conquests ended
 
 
@@ -147,6 +145,11 @@ void growCountries(std::vector<Province*>& provinces, std::vector<Country*>& cou
 
 
 	}
+
+
+
+	map.saveToFile("../img/map.png");
+	//end of generation
 }
 
 

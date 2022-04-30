@@ -17,7 +17,7 @@ void createCountryFromIsolatedRebels(Province* StartingProv, Country* From, floa
 		std::vector<Province*> provs;
 		StartingProv->controlledBy = From;
 		C->provinces.clear(); //the capital city will be added again in the function allConnectedProvinesFromSameCountry
-		std::cout << 1000 * depthInCountry << "p ";
+
 		StartingProv->allConnectedProvinesFromSameCountry(From->provinces.size() * depthInCountry, C->provinces);
 
 		for (int p = 0; p < C->provinces.size(); p++) {
@@ -123,57 +123,120 @@ void Country::checkIfStillExists(std::vector<Country*>& countries) {
 
 
 
-void Country::checkIfProvinceIsSecessing(Province* P, std::vector<Country*>& countries, sf::Image& map){
+void Country::checkIfProvinceIsSecessing(Province* LostProvince, std::vector<Country*>& countries, sf::Image& map){
 	// "this" is the loosing country
 	// P is the province that was lost to P->controlledBy
+	if (this->provinces.size() == 0) return;
 
+	Country* Looser = this;
+	Country* Winner = LostProvince->controlledBy;
+
+	int maxDepth = Looser->provinces.size(); //increasing the denominator makes countries look more round
+	Looser->provincesConnectedToCapital.clear();
+	//All the provinces that aren't in the vector "provincesConnectedToCapital" aren't connected to the capital,
+	//so we have to make them either independant or part of another country
+	Looser->capitalCity->allConnectedProvinesFromSameCountry(maxDepth, Looser->provincesConnectedToCapital);
+	int nbOfUnconnectedProvinces = Looser->provinces.size() - Looser->provincesConnectedToCapital.size();
+
+	if (nbOfUnconnectedProvinces != 0) {
+		//check if the province is connected, if not take decisions accordingly
+		for (int provTestedN = 0; provTestedN < Looser->provinces.size(); provTestedN++) {
+			Province* ProvTested = Looser->provinces[provTestedN];
+			if (!ProvTested->isConnectedToCapital() && ProvTested->controlledBy != Looser) {
+
+
+				//find a new country for the province
+				//get all neighboring provinces from the same cluster (connected)
+				std::vector<Province*> connectedProvs;
+				connectedProvs.clear();
+				maxDepth = nbOfUnconnectedProvinces;
+				ProvTested->allConnectedProvinesFromSameCountry(maxDepth, connectedProvs);
+
+				//find a neighboring country that could host the cluster of provinces
+				Country* NewHost = nullptr;
+				for (int pn = 0; pn < connectedProvs.size() && NewHost == nullptr; pn++) {
+					Province* ProvInClusterTested = connectedProvs[pn];
+					for (int nei = 0; nei < ProvInClusterTested->neighbors.size(); nei++) {
+						Country* C = ProvInClusterTested->neighbors[nei]->controlledBy;
+						if (C != nullptr && C != Looser) {
+							NewHost = C;
+						}
+					}
+				}
+				if (NewHost != nullptr) {
+					for (int i = 0; i < connectedProvs.size(); i++) {
+						connectedProvs[i]->changeColor(sf::Color::White, map);//changeCountry(NewHost, map);
+					}
+				} else {
+					std::cout << "Error: didn't find a new host";
+				}
+			}
+
+			//createCountryFromIsolatedRebels(Looser->provinces[provTested], Looser, 0.1, countries, map);
+		}
+	}
+
+
+
+
+
+
+
+
+	/*
 	//check if any of the neighbors is isolated, if so let it create it own country
-	int maxDepth = this->provinces.size(); //increasing the denominator makes countries to look more round
+	int maxDepth = this->provinces.size()/2; //increasing the denominator makes countries look more round
 	std::vector<Province*> connectedProvs;
 	this->provincesConnectedToCapital.clear();
 	this->capitalCity->allConnectedProvinesFromSameCountry(maxDepth, this->provincesConnectedToCapital);
 
 	int nbOfNotConnectedProvinces = this->provinces.size() - this->provincesConnectedToCapital.size();
 
-	if (nbOfNotConnectedProvinces > 10) {
+	if (nbOfNotConnectedProvinces > 0) {
 		for (int i = 0; i < this->provinces.size(); i++) {
 			Province* P2 = this->provinces[i];
 			if ((P2->controlledBy == nullptr) or (P2->controlledBy != this)) { continue; }
 			//Country secedes if it is not easily connected to it capital city
 			if (!P2->isConnectedToCapital()) {
-				float importance = rand() % 70 + 10;
+				//select all isolateed provinces rfom the same cluster
+				std::vector<Province*> clusterOfProvinces;
+				clusterOfProvinces.clear();
+				this->capitalCity->allConnectedProvinesFromSameCountry(maxDepth, clusterOfProvinces);
 
-				createCountryFromIsolatedRebels(P2, this, importance/100, countries, map);
 
-				//Country* newCountry = P2->controlledBy;
-				//if (newCountry->provinces.size() < 5) {
-					//;
-				//}
-				//return;
-			}
+				//if the number of isolated provinces is too small, give it to a neighbor
+				if (clusterOfProvinces.size() < 5) {
+					int provTested = 0;
+					int neiTested = 0;
+					while (clusterOfProvinces[provTested]->neighbors[neiTested]->controlledBy == this
+						|| clusterOfProvinces[provTested]->neighbors[neiTested]->controlledBy == nullptr) {
+						//std::cout << "\nmax: " << clusterOfProvinces[provTested]->neighbors.size() << "  " << neiTested;
+						neiTested = (neiTested + 1)%(clusterOfProvinces[provTested]->neighbors).size();
+						provTested += (neiTested == 0);
+						if (provTested >= clusterOfProvinces.size()) {
+							break;
+						}
+					}
+					if (provTested < clusterOfProvinces.size()) {
+						for (int clusProv = 1; clusProv < clusterOfProvinces.size(); clusProv++) {
+							Country* newCountry = clusterOfProvinces[provTested]->neighbors[neiTested]->controlledBy;
+							clusterOfProvinces[clusProv]->changeCountry(newCountry, map);
+						}
+					}
 
-		}
-	} else {
-		Country* countryWinningTheProvince;
-		for (int i = 0; i < this->provinces.size(); i++) {
-			Province* P2 = this->provinces[i];
-			if ((P2->controlledBy == nullptr) or (P2->controlledBy != this)) { continue; }
-			//Country secedes if it is not easily connected to it capital city
-			if (!P2->isConnectedToCapital()) {
-				//give it to a neighbor if the new rebel state will be too small to exit. 
-				//If no neighbor, give it to the country that won the battle
-				countryWinningTheProvince = P->controlledBy;
-				for (int nei = 0; ((nei < P2->neighbors.size()) && (countryWinningTheProvince == P->controlledBy)); nei++) {
-					if (P2->neighbors[nei]->controlledBy != nullptr && P2->neighbors[nei]->controlledBy != this) {
-						countryWinningTheProvince = P2->neighbors[nei]->controlledBy;
-						break;
+				} else {
+					//else create an independent country
+					createCountryFromIsolatedRebels(P2, this, 1.0, countries, map);
+					Country* newCountry = P2->controlledBy;
+					for (int clusProv = 1; clusProv < clusterOfProvinces.size(); clusProv++) {
+						clusterOfProvinces[clusProv]->changeCountry(newCountry, map);
+						//clusterOfProvinces[clusProv]->changeColorAlternating(sf::Color::Green, map);
 					}
 				}
-				P2->changeCountry(countryWinningTheProvince, map);
 			}
 		}
 	}
-
+	*/
 }
 
 
@@ -249,8 +312,8 @@ void Country::expand(sf::Image& map, std::vector<Country*>& countries) {
 		//check if the country is fully annexed or if any of the annexed province's neightbors are now isolated
 		if (Looser != nullptr) {
 			if (Looser->militaryPower < Winner->militaryPower / 10) {
-				for (int pr = 0; pr < Looser->provinces.size(); pr++) {
-					Looser->provinces[pr]->changeCountry(Winner, map);
+				while (Looser->provinces.size() != 0) {
+					Looser->provinces[0]->changeCountry(Winner, map);
 				}
 			}
 			else {
@@ -285,8 +348,8 @@ void Country::expand(sf::Image& map, std::vector<Country*>& countries) {
 			//check if the country is fully annexed or if any of the annexed province's neightbors are now isolated
 			if (Looser != nullptr) {
 				if (Looser->militaryPower < Winner->militaryPower / 10) {
-					for (int pr = 0; pr < Looser->provinces.size(); pr++) {
-						Looser->provinces[pr]->changeCountry(Winner, map);
+					while (Looser->provinces.size() != 0) {
+						Looser->provinces[0]->changeCountry(Winner, map);
 					}
 				} else {
 					Looser->checkIfProvinceIsSecessing(LooserProv, countries, map);

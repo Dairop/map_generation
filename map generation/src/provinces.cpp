@@ -385,13 +385,13 @@ void Province::changeCountry(Country* newCountry, sf::Image& map) {
 
 	if (Looser != nullptr) {
 		Looser->provinces.erase(std::remove(Looser->provinces.begin(), Looser->provinces.end(), LooserProv), Looser->provinces.end());
-		Looser->FindBorderProvinces();
-
 		if (Looser->capitalCity == LooserProv) {
 			if (Looser->provinces.size() > 0) {
-				Looser->capitalCity = Looser->provinces[0];
+				Looser->capitalCity = Looser->provinces[rand() % Looser->provinces.size()];
 			}
 		}
+		
+		Looser->FindBorderProvinces();
 
 		int ls = Looser->provinces.size() + 1;
 		Looser->militaryPower -= std::fmin(abs(Looser->militaryPower - Winner->militaryPower), Looser->militaryPower / ls);

@@ -100,6 +100,9 @@ sf::Texture generateNoiseHeightmap(sf::Vector2f MAP_SIZE, int resolution, std::v
 		c = ((p/1 + p1/1 + p2/1.8 + p3/4 + p4/6 + p5/7) / (1/1 + 1/1 + 1/1.8 + 1/4 + 1/6 + 1/7)) * 205;
 		c = fmin(fmax(0, c), 255);
 
+
+
+
 		P->changeColor(sf::Color(c, c, c), noiseIm);
 	}
 
@@ -166,9 +169,11 @@ sf::Texture heightToColors(sf::Image heightmap) {
 		}
 	}
 
-	//just to don't create a new texture
+	////just to don't create a new texture
 	sf::Texture t;
 	t.loadFromImage(heightmap);
+	heightmap.saveToFile("../img/map15.png");
+
 	return t;
 }
 
@@ -193,7 +198,6 @@ sf::Texture newMap(sf::Vector2f MAP_SIZE, int resolution, int fractalLike, float
 	advancement = 85.0;
 	noiseMap = generateNoiseHeightmap(MAP_SIZE, resolution, provinces, mapImg);
 	advancement = 100.0;
-	//noiseMap.copyToImage().saveToFile("../img/map15.png");
 	std::cout << "End of map generation\n";
 
 	return noiseMap;//mapTxt.getTexture();

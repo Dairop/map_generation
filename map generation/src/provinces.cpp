@@ -272,7 +272,7 @@ void Province::changeColorAlternating(sf::Color newColor, sf::Image& map){
 
 void Province::updateMilitaryPower() {
 	this->militaryPower = this->allPixels.size();
-	this->militaryPower *= 0.5 + this->borderWater;
+	this->militaryPower *= 0.75 + this->borderWater;
 }
 
 

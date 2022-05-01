@@ -20,7 +20,7 @@ public:
 
 	int surface = 0;
 	float militaryPower = 1;
-	int aggressivity = 4 + rand() % 9 + rand() % 9; //20 = attack at each update, 0 = will never attack
+	int aggressivity = 10 + rand() % 6 + rand() % 6; //20 = attack at each update, 0 = will never attack
 	float stability = 0;
 
 	void init(Province*& StartingProvince);
@@ -28,6 +28,6 @@ public:
 	void calculatePower();
 	void FindBorderProvinces();
 	void checkIfStillExists(std::vector<Country*>& countries);
-	void checkIfProvinceIsSecessing(Province* P, std::vector<Country*>& countries, sf::Image& map);
+	void checkIfProvinceIsSecessing(std::vector<Country*>& countries, sf::Image& map);
 	void expand(sf::Image& map, std::vector<Country*>& countries);
 };

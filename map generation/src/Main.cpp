@@ -1,10 +1,12 @@
-#include "commons.h"
+﻿#include "commons.h"
 
 
 
 //global variables
 int windowWidth = 1920;
 int windowHeight = 1080;
+
+bool showBordersAtTheEnd = true;
 
 sf::Clock deltaClock;
 sf::Time dt = deltaClock.restart();
@@ -87,6 +89,7 @@ void growCountries(std::vector<Province*>& provinces, std::vector<Country*>& cou
 			//create rebels in province
 			if (countries[n]->provinces.size() < 10) {
 				if (countries[n]->provinces.size() == 0) countries[n]->checkIfStillExists(countries);
+
 			} else {
 				int nbReb = std::min((int)countries[n]->provinces.size() - 5, rand() % 4 + 1);
 				for (int rebn = 0; rebn < nbReb; rebn++) {
@@ -105,24 +108,23 @@ void growCountries(std::vector<Province*>& provinces, std::vector<Country*>& cou
 	}
 
 	//conquests ended
-
-
-
-
 	
+
 	for (int c = 0; c < countries.size(); c++) {
 		//check if end of thread
 		if (!window.isOpen()) return;
 
-		for (int p = 0; p < countries[c]->provinces.size(); p++) {
-			for (int px = 0; px < countries[c]->provinces[p]->borders.size(); px++) {
-				map.setPixel(countries[c]->provinces[p]->borders[px].x,
-					countries[c]->provinces[p]->borders[px].y,
-					sf::Color::Black);
+		if (showBordersAtTheEnd) {
+			for (int p = 0; p < countries[c]->provinces.size(); p++) {
+				for (int px = 0; px < countries[c]->provinces[p]->borders.size(); px++) {
+					map.setPixel(countries[c]->provinces[p]->borders[px].x,
+						countries[c]->provinces[p]->borders[px].y,
+						sf::Color::Black);
+				}
 			}
 		}
 
-		//draw the borders of the capital province
+		//fill half of the pixels from the capital to a darker variant
 		ColorHSV newColorForCapital = RgbToHsv(countries[c]->color);
 		newColorForCapital.v = fmax(0, newColorForCapital.v - 0.3);
 		countries[c]->capitalCity->changeColorAlternating(HSVtoRGB(newColorForCapital.h, 
@@ -130,17 +132,17 @@ void growCountries(std::vector<Province*>& provinces, std::vector<Country*>& cou
 																	newColorForCapital.v),
 															map);
 
-		//draw a red cross of 5pixels on the capital city
-		sf::Vector2f pos = countries[c]->capitalCity->posCity;// changeColor(sf::Color::White, map);
-		map.setPixel(pos.x, pos.y, sf::Color::Red);
+		//draw a white cross of 5pixels on the capital city
+		sf::Vector2f pos = countries[c]->capitalCity->posCity;
+		map.setPixel(pos.x, pos.y, sf::Color::White);
 		sf::Vector2u pos2 = stayInLimits(sf::Vector2u(pos.x, pos.y), 0, map.getSize());
-		map.setPixel(pos2.x, pos2.y, sf::Color::Red); 
+		map.setPixel(pos2.x, pos2.y, sf::Color::White);
 		pos2 = stayInLimits(sf::Vector2u(pos.x, pos.y), 1, map.getSize());
-		map.setPixel(pos2.x, pos2.y, sf::Color::Red);
+		map.setPixel(pos2.x, pos2.y, sf::Color::White);
 		pos2 = stayInLimits(sf::Vector2u(pos.x, pos.y), 2, map.getSize());
-		map.setPixel(pos2.x, pos2.y, sf::Color::Red);
+		map.setPixel(pos2.x, pos2.y, sf::Color::White);
 		pos2 = stayInLimits(sf::Vector2u(pos.x, pos.y), 3, map.getSize());
-		map.setPixel(pos2.x, pos2.y, sf::Color::Red);
+		map.setPixel(pos2.x, pos2.y, sf::Color::White);
 
 
 
@@ -159,7 +161,9 @@ void growProvince(std::vector<Province*>& provinces, std::vector<Country*>& coun
 	bool growAtDoubleSpeed = (map.getSize().x * map.getSize().y) > 4000;
 
 	while (provincesToGrow.size() != 0) {
-		int n = rand() % provincesToGrow.size();
+		//provinces in the first indexes haven't been selected for a longer time
+		//so we give them a higher change to get selected
+		int n = rand() % (1+ rand() % (1 + rand() % provincesToGrow.size()));
 		int bef = provincesToGrow[n]->allPixels.size();
 
 		provincesToGrow[n]->grow(map);
@@ -179,6 +183,9 @@ void growProvince(std::vector<Province*>& provinces, std::vector<Country*>& coun
 			continue;
 		}
 
+		//allow for more parity
+		provincesToGrow.push_back(provincesToGrow[n]);
+		provincesToGrow.erase(provincesToGrow.begin() + n);
 
 		//check if end of thread
 		if (!window.isOpen()) return;
@@ -399,8 +406,8 @@ int startGeneration() {
 	std::thread threadUpdateGrowth(growProvince, std::ref(provinces), std::ref(countries), std::ref(window), std::ref(mapIm), std::ref(heightMapIm));
 
 
-	Slider Speed(sf::Vector2f(35, 5), sf::Vector2f(30, 2), "relative", 1, 100);
-	Button Pause(sf::Vector2i(0, 92), sf::Vector2i(25, 7), "Pause", "relative", 0) ;
+	Slider Speed(sf::Vector2f(10, 95), sf::Vector2f(30, 2), "relative", 1, 100);
+	Button Pause(sf::Vector2i(0, 92), sf::Vector2i(7, 7), ">", "relative", 0) ;
 	Speed.value = genSpeed;
 
 	while (window.isOpen()) {
@@ -413,10 +420,18 @@ int startGeneration() {
 
 		Speed.update(window.getSize(), windowHeight);
 		Pause.update(window.getSize(), windowHeight);
-		Speed.rectScreen.left = windowWidth / 10;
+		Pause.rectScreen.left = 15;
+		Speed.rectScreen.left = windowWidth / 15;
 		if (UserMouse.isLeftPressed) {
 			if (Speed.clicked(UserMouse)) { genSpeed = Speed.value; }
-			else if (Pause.clicked(UserMouse)) { pause = !pause;}
+			else if (Pause.clicked(UserMouse)) { 
+				pause = !pause;
+				if (pause) {
+					Pause.text = ">";
+				} else {
+					Pause.text = "||";
+				}
+			}
 		}
 		Speed.draw(window);
 		Pause.draw(window);
@@ -458,11 +473,11 @@ void menu() {
 	Res.value = 1;
 
 	Button ProvAndCountPannel(sf::Vector2i(7, 41), sf::Vector2i(86, 23), "", "relative", 0);
-	Slider Provs(sf::Vector2f(9, 48), sf::Vector2f(34, 2), "relative", 100, 7000);
-	Slider Countr(sf::Vector2f(57, 48), sf::Vector2f(34, 2), "relative", 2, 7000);
-	Slider FinalCountr(sf::Vector2f(57, 59), sf::Vector2f(34, 2), "relative", 1, 400);
-	Slider Rebels(sf::Vector2f(9, 59), sf::Vector2f(34, 2), "relative", 0, 50);
-	Provs.value = 4000; Countr.value = 1500; FinalCountr.value = nbFinalCountries; Rebels.value = rebelsFrequency;
+	Slider Provs(sf::Vector2f(9.5, 48), sf::Vector2f(34, 2), "relative", 100, 7000);
+	Slider Countr(sf::Vector2f(56.5, 48), sf::Vector2f(34, 2), "relative", 2, 7000);
+	Slider FinalCountr(sf::Vector2f(56.5, 59), sf::Vector2f(34, 2), "relative", 1, 400);
+	Slider Rebels(sf::Vector2f(9.5, 59), sf::Vector2f(34, 2), "relative", 0, 50);
+	Provs.value = nbProvinces; Countr.value = nbCountries; FinalCountr.value = nbFinalCountries; Rebels.value = rebelsFrequency;
 
 	Res.value = 1;
 
@@ -551,12 +566,14 @@ void menu() {
 		posTxt.height /= 3.5; posTxt.top += posTxt.height / 8; posTxt.width /= 2.25;
 		write(window, "nb of provinces: " + std::to_string(nbProvinces), posTxt);
 
-		posTxt.left += ProvAndCountPannel.rectScreen.width / 1.8;
+		posTxt.left += ProvAndCountPannel.rectScreen.width / 1.81;
 		write(window, "nb of countries: " + std::to_string(nbCountries), posTxt);
 
-		posTxt.top += ProvAndCountPannel.rectScreen.height / 2.4;
+		posTxt.top += ProvAndCountPannel.rectScreen.height / 2.1;
 		write(window, "nb of final countries: " + std::to_string(nbFinalCountries), posTxt);
 
+		posTxt.left -= ProvAndCountPannel.rectScreen.width / 1.81;
+		write(window, "rebels frequency: " + std::to_string(rebelsFrequency), posTxt);
 
 		if (generationMode == 0) {
 			SizePannel.update(screenSize, menuSize);

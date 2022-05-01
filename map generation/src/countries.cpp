@@ -42,6 +42,8 @@ void createCountryFromIsolatedRebels(Province* StartingProv, Country* From, floa
 			}
 		}
 
+
+		From->checkIfProvinceIsSecessing(countries, map);
 		return;
 	}
 }
@@ -123,13 +125,12 @@ void Country::checkIfStillExists(std::vector<Country*>& countries) {
 
 
 
-void Country::checkIfProvinceIsSecessing(Province* LostProvince, std::vector<Country*>& countries, sf::Image& map){
+void Country::checkIfProvinceIsSecessing(std::vector<Country*>& countries, sf::Image& map){
 	// "this" is the loosing country
 	// P is the province that was lost to P->controlledBy
 	if (this->provinces.size() == 0) return;
 
 	Country* Looser = this;
-	Country* Winner = LostProvince->controlledBy;
 
 	int maxDepth = Looser->provinces.size(); //increasing the denominator makes countries look more round
 	Looser->provincesConnectedToCapital.clear();
@@ -142,7 +143,7 @@ void Country::checkIfProvinceIsSecessing(Province* LostProvince, std::vector<Cou
 		//check if the province is connected, if not take decisions accordingly
 		for (int provTestedN = 0; provTestedN < Looser->provinces.size(); provTestedN++) {
 			Province* ProvTested = Looser->provinces[provTestedN];
-			if (!ProvTested->isConnectedToCapital() && ProvTested->controlledBy != Looser) {
+			if (!ProvTested->isConnectedToCapital() && ProvTested->controlledBy == Looser) {
 
 
 				//find a new country for the province
@@ -165,7 +166,7 @@ void Country::checkIfProvinceIsSecessing(Province* LostProvince, std::vector<Cou
 				}
 				if (NewHost != nullptr) {
 					for (int i = 0; i < connectedProvs.size(); i++) {
-						connectedProvs[i]->changeColor(sf::Color::White, map);//changeCountry(NewHost, map);
+						connectedProvs[i]->changeCountry(NewHost, map);
 					}
 				} else {
 					std::cout << "Error: didn't find a new host";
@@ -317,7 +318,8 @@ void Country::expand(sf::Image& map, std::vector<Country*>& countries) {
 				}
 			}
 			else {
-				Looser->checkIfProvinceIsSecessing(LooserProv, countries, map);
+				Looser->checkIfProvinceIsSecessing(countries, map);
+
 				//don't loose as much stability because they didn't attack
 				Looser->stability -= 1;
 			}
@@ -352,7 +354,8 @@ void Country::expand(sf::Image& map, std::vector<Country*>& countries) {
 						Looser->provinces[0]->changeCountry(Winner, map);
 					}
 				} else {
-					Looser->checkIfProvinceIsSecessing(LooserProv, countries, map);
+					Looser->checkIfProvinceIsSecessing(countries, map);
+
 					Looser->stability -= 2;
 				}
 				Looser->checkIfStillExists(countries);

@@ -82,7 +82,6 @@ sf::Texture generateNoiseHeightmap(sf::Vector2f MAP_SIZE, int resolution, std::v
 	for (int provIndex = 0; provIndex < provinces.size(); provIndex++) {
 		Province* P = provinces[provIndex];
 
-		std::cout << "   p:" << P->posCity.x << " " << P->posCity.y;
 		float x = P->posCity.x; float y = P->posCity.y;
 
 		//https://www.desmos.com/calculator/fqvcoq9vcz

@@ -74,10 +74,16 @@ void printAdvancement(float& adv) {
 
 void deleteObjectsInVects(std::vector<Province*> provinces, std::vector<Country*> countries) {
 	for (int i = 0; i < provinces.size(); i++) {
-		delete(provinces[i]);
+		try {
+			delete(provinces[i]);
+		}
+		catch (char e) { break; }
 	}
 	for (int i = 0; i < countries.size(); i++) {
-		delete(countries[i]);
+		try {
+			delete(countries[i]);
+		}
+		catch (char e) { break; }
 	}
 }
 

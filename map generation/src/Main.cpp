@@ -4,34 +4,59 @@
 
 //global variables
 int windowWidth = 1920;
-int windowHeight = 1080;
+int windowHeight = 1000;
+sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Map Generation v0.2");
 
-bool showBordersAtTheEnd = true;
+bool showBordersAtTheEnd;
 
 sf::Clock deltaClock;
 sf::Time dt = deltaClock.restart();
 
-sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Name");
 
-int generationMode = 0; // 0 = generate map ; 1 = use existing map 
+int generationMode; // 0 = generate map ; 1 = use existing map 
 
-bool pause = true;
-float zoom = 1;
-sf::Vector2f SIZE = sf::Vector2f(1920 / 1, 1080 / 1); // size of the map
-int mapRes = 1;
-sf::Vector2f camPos = sf::Vector2f(SIZE.x * 1.5, SIZE.y * 1.5);
-int nbProvinces = 3000;
-int nbCountries = 3000;
-int nbFinalCountries = 120;
-bool rebelsWhenTooBig = true;
-int rebelsFrequency = 1;	// from 0 to 4, when 0 rebels never spawn 
+bool pause;
+bool inMenu;
+float zoom;
+sf::Vector2f SIZE; // size of the map
+int mapRes;
+sf::Vector2f camPos;
+int nbProvinces;
+int nbCountries;
+int nbFinalCountries;
+bool rebelsWhenTooBig;
+int rebelsFrequency;	// from 0 to 4, when 0 rebels never spawn 
 							//when 1 rebels spawn when the country control (5-1)*20=80% of the world
 							//when 4 rebels spawn when the country controls 80% of the world
 
-float genSpeed = 1;  //from 1 to 100
+float genSpeed;  //from 1 to 100
+
+void init() {
+	showBordersAtTheEnd = true;
+
+	dt = deltaClock.restart();
+
+	generationMode = 0; // 0 = generate map ; 1 = use existing map 
+
+	pause = true;
+	inMenu = false;
+	zoom = 1;
+	SIZE = sf::Vector2f(1920, 1080); // size of the map
+	mapRes = 1;
+	camPos = sf::Vector2f(SIZE.x * 1.5, SIZE.y * 1.5);
+	nbProvinces = 3000;
+	nbCountries = 3000;
+	nbFinalCountries = 120;
+	rebelsWhenTooBig = true;
+	rebelsFrequency = 1;	// from 0 to 4, when 0 rebels never spawn 
+							//when 1 rebels spawn when the country control (5-1)*20=80% of the world
+							//when 4 rebels spawn when the country controls 80% of the world
+	
+	genSpeed = 1; //from 1 to 100
+}
 
 Mouse UserMouse;
-
+void menu();
 
 
 
@@ -47,13 +72,24 @@ void printAdvancement(float& adv) {
 
 
 
+void deleteObjectsInVects(std::vector<Province*> provinces, std::vector<Country*> countries) {
+	for (int i = 0; i < provinces.size(); i++) {
+		delete(provinces[i]);
+	}
+	for (int i = 0; i < countries.size(); i++) {
+		delete(countries[i]);
+	}
+}
+
+
+
 
 
 
 void growCountries(std::vector<Province*>& provinces, std::vector<Country*>& countries, sf::RenderWindow& window, sf::Image& map, sf::Image& heightmap) {
 	while (countries.size() > nbFinalCountries){
 		//check if end of thread
-		if (!window.isOpen()) return;
+		if (!window.isOpen() || inMenu) { deleteObjectsInVects(provinces, countries); return; }
 
 		/*
 		//https://www.desmos.com/calculator/i8cje9jsdf
@@ -112,7 +148,7 @@ void growCountries(std::vector<Province*>& provinces, std::vector<Country*>& cou
 
 	for (int c = 0; c < countries.size(); c++) {
 		//check if end of thread
-		if (!window.isOpen()) return;
+		if (!window.isOpen() || inMenu) { deleteObjectsInVects(provinces, countries); return; }
 
 		if (showBordersAtTheEnd) {
 			for (int p = 0; p < countries[c]->provinces.size(); p++) {
@@ -149,7 +185,7 @@ void growCountries(std::vector<Province*>& provinces, std::vector<Country*>& cou
 	}
 
 
-
+	deleteObjectsInVects(provinces, countries);
 	map.saveToFile("../img/map.png");
 	//end of generation
 }
@@ -188,7 +224,7 @@ void growProvince(std::vector<Province*>& provinces, std::vector<Country*>& coun
 		provincesToGrow.erase(provincesToGrow.begin() + n);
 
 		//check if end of thread
-		if (!window.isOpen()) return;
+		if (!window.isOpen() || inMenu) { deleteObjectsInVects(provinces, countries); return; }
 	}
 
 
@@ -208,7 +244,7 @@ void growProvince(std::vector<Province*>& provinces, std::vector<Country*>& coun
 		provinces[i]->updateMilitaryPower();
 
 		//check if end of thread
-		if (!window.isOpen()) return;
+		if (!window.isOpen() || inMenu) { deleteObjectsInVects(provinces, countries); return; }
 	}
 
 	for (int i = 0; i < provinces.size(); i++) {
@@ -344,7 +380,7 @@ void generationEvents(std::thread& threadUpdateGrowth, sf::RectangleShape& map) 
 
 
 int startGeneration() {
-	if (!window.isOpen()) return 0;
+	if (!window.isOpen() || inMenu) return 0;
 
 
 	// init
@@ -382,7 +418,7 @@ int startGeneration() {
 	std::vector <Province*> provinces;
 	std::vector <Country*> countries;
 
-	if (!window.isOpen()) return 0;
+	if (!window.isOpen() || inMenu) return 0;
 
 	for (int i = 0; i < nbProvinces; i++) {
 		Province* newProv = new Province;
@@ -408,9 +444,10 @@ int startGeneration() {
 
 	Slider Speed(sf::Vector2f(10, 95), sf::Vector2f(30, 2), "relative", 1, 100);
 	Button Pause(sf::Vector2i(0, 92), sf::Vector2i(7, 7), ">", "relative", 0) ;
+	Button MenuButton(sf::Vector2i(10, 10), sf::Vector2i(20, 5), "Back to menu", "fixed", 0);
 	Speed.value = genSpeed;
 
-	while (window.isOpen()) {
+	while (window.isOpen() && !inMenu) {
 		generationEvents(threadUpdateGrowth, map);
 
 		window.clear(sf::Color(50, 50, 0));
@@ -420,8 +457,11 @@ int startGeneration() {
 
 		Speed.update(window.getSize(), windowHeight);
 		Pause.update(window.getSize(), windowHeight);
+		MenuButton.update(window.getSize(), windowHeight);
+
 		Pause.rectScreen.left = 15;
 		Speed.rectScreen.left = windowWidth / 15;
+
 		if (UserMouse.isLeftPressed) {
 			if (Speed.clicked(UserMouse)) { genSpeed = Speed.value; }
 			else if (Pause.clicked(UserMouse)) { 
@@ -432,15 +472,19 @@ int startGeneration() {
 					Pause.text = "||";
 				}
 			}
+			if (MenuButton.clicked(UserMouse)) {
+				menu();
+			}
 		}
 		Speed.draw(window);
 		Pause.draw(window);
+		MenuButton.draw(window);
 
 		dt = deltaClock.restart();
 		window.display();
 	}
 
-
+	deleteObjectsInVects(provinces, countries); 
 	return 0;
 
 }
@@ -448,6 +492,9 @@ int startGeneration() {
 
 
 void menu() {
+	init();
+	inMenu = true;
+
 	sf::Texture backgroundTexture;
 	backgroundTexture.create(1920, 1080);
 	backgroundTexture.loadFromFile("../img/background.png");
@@ -523,6 +570,7 @@ void menu() {
 				}
 			}
 			else if (Start.clicked(UserMouse)) {
+				inMenu = false;
 				startGeneration();
 			}
 		}

@@ -47,6 +47,7 @@ void generateCellsMap(int numberOfProvinces, sf::Image& mapImg, std::vector<Prov
 	mapImg.saveToFile("../img/cellsMap.png");
 	//avdancement of 80
 	advancement = 80.0;
+
 }
 
 
@@ -81,6 +82,7 @@ sf::Texture generateNoiseHeightmap(sf::Vector2f MAP_SIZE, int resolution, std::v
 	for (int provIndex = 0; provIndex < provinces.size(); provIndex++) {
 		Province* P = provinces[provIndex];
 
+		std::cout << "   p:" << P->posCity.x << " " << P->posCity.y;
 		float x = P->posCity.x; float y = P->posCity.y;
 
 		//https://www.desmos.com/calculator/fqvcoq9vcz
@@ -199,6 +201,10 @@ sf::Texture newMap(sf::Vector2f MAP_SIZE, int resolution, int fractalLike, float
 	noiseMap = generateNoiseHeightmap(MAP_SIZE, resolution, provinces, mapImg);
 	advancement = 100.0;
 	std::cout << "End of map generation\n";
+
+	for (int i = 0; i < numberOfProvinces; i++) {
+		delete(provinces[i]);
+	}
 
 	return noiseMap;//mapTxt.getTexture();
 }

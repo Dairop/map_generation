@@ -74,16 +74,14 @@ void printAdvancement(float& adv) {
 
 void deleteObjectsInVects(std::vector<Province*> provinces, std::vector<Country*> countries) {
 	for (int i = 0; i < provinces.size(); i++) {
-		try {
+		if (provinces[i] != nullptr){
 			delete(provinces[i]);
 		}
-		catch (char e) { break; }
 	}
 	for (int i = 0; i < countries.size(); i++) {
-		try {
+		if (countries[i] != nullptr) {
 			delete(countries[i]);
 		}
-		catch (char e) { break; }
 	}
 }
 
@@ -197,7 +195,7 @@ void growCountries(std::vector<Province*>& provinces, std::vector<Country*>& cou
 }
 
 
-void growProvince(std::vector<Province*>& provinces, std::vector<Country*>& countries, sf::RenderWindow&window, sf::Image& map, sf::Image& heightmap) {
+void growProvince(std::vector<Province*>& provinces, std::vector<Country*>& countries, sf::RenderWindow&window, sf::Image& map, sf::Image& heightmap, bool& finishedGen) {
 	std::vector<Province*> provincesToGrow = provinces;
 
 	bool growAtDoubleSpeed = (map.getSize().x * map.getSize().y) > 4000;
@@ -270,6 +268,7 @@ void growProvince(std::vector<Province*>& provinces, std::vector<Country*>& coun
 	}
 
 	growCountries(provinces, countries, window, map, heightmap);
+	finishedGen = true;
 	std::cout << "\nend";
 }
 
@@ -445,7 +444,8 @@ int startGeneration() {
 
 	camPos = sf::Vector2f(SIZE.x * 1.5, SIZE.y * 1.5);
 
-	std::thread threadUpdateGrowth(growProvince, std::ref(provinces), std::ref(countries), std::ref(window), std::ref(mapIm), std::ref(heightMapIm));
+	bool finishedGen = false;
+	std::thread threadUpdateGrowth(growProvince, std::ref(provinces), std::ref(countries), std::ref(window), std::ref(mapIm), std::ref(heightMapIm), std::ref(finishedGen));
 
 
 	Slider Speed(sf::Vector2f(10, 95), sf::Vector2f(30, 2), "relative", 1, 100);
@@ -456,34 +456,49 @@ int startGeneration() {
 	while (window.isOpen() && !inMenu) {
 		generationEvents(threadUpdateGrowth, map);
 
+		if (finishedGen && threadUpdateGrowth.joinable()) {
+			threadUpdateGrowth.join();
+		}
+
 		window.clear(sf::Color(50, 50, 0));
 
 		mapTx.loadFromImage(mapIm);
 		window.draw(map);
 
-		Speed.update(window.getSize(), windowHeight);
-		Pause.update(window.getSize(), windowHeight);
+		if (!finishedGen) {
+			Speed.update(window.getSize(), windowHeight);
+			Pause.update(window.getSize(), windowHeight);
+
+			Pause.rectScreen.left = 15;
+			Speed.rectScreen.left = windowWidth / 15;
+		}
+
 		MenuButton.update(window.getSize(), windowHeight);
 
-		Pause.rectScreen.left = 15;
-		Speed.rectScreen.left = windowWidth / 15;
 
 		if (UserMouse.isLeftPressed) {
-			if (Speed.clicked(UserMouse)) { genSpeed = Speed.value; }
-			else if (Pause.clicked(UserMouse)) { 
-				pause = !pause;
-				if (pause) {
-					Pause.text = ">";
-				} else {
-					Pause.text = "||";
+			if (!finishedGen) {
+				if (Speed.clicked(UserMouse)) { genSpeed = Speed.value; }
+				else if (Pause.clicked(UserMouse)) {
+					pause = !pause;
+					if (pause) {
+						Pause.text = ">";
+					}
+					else {
+						Pause.text = "||";
+					}
 				}
 			}
 			if (MenuButton.clicked(UserMouse)) {
-				menu();
+				return 1;
 			}
 		}
-		Speed.draw(window);
-		Pause.draw(window);
+
+		if (!finishedGen) {
+			Speed.draw(window);
+			Pause.draw(window);
+		}
+
 		MenuButton.draw(window);
 
 		dt = deltaClock.restart();
@@ -577,7 +592,10 @@ void menu() {
 			}
 			else if (Start.clicked(UserMouse)) {
 				inMenu = false;
-				startGeneration();
+				int result = startGeneration();
+				if (result) {
+					inMenu = true;
+				}
 			}
 		}
 		else if (UserMouse.isLeftPressed) {

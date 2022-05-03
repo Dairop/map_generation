@@ -205,5 +205,6 @@ sf::Texture newMap(sf::Vector2f MAP_SIZE, int resolution, int fractalLike, float
 		delete(provinces[i]);
 	}
 
+
 	return noiseMap;//mapTxt.getTexture();
 }

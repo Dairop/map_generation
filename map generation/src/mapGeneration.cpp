@@ -134,7 +134,7 @@ sf::Texture generateNoiseHeightmap(sf::Vector2f MAP_SIZE, int resolution, std::v
 		if ((int)y % 25 == 0) std::cout << "calculated heightmap of line " << y << '\n';
 	}*/
 
-	noiseIm.saveToFile("../img/test.png");
+	noiseIm.saveToFile("../img/heightmap.png");
 	sf::Image rsim; rsim.create(MAP_SIZE.x, MAP_SIZE.y); resizeImage(noiseIm, rsim);
 	sf::Texture t; t.loadFromImage(rsim);
 	return t;
@@ -173,7 +173,7 @@ sf::Texture heightToColors(sf::Image heightmap) {
 	////just to don't create a new texture
 	sf::Texture t;
 	t.loadFromImage(heightmap);
-	heightmap.saveToFile("../img/map15.png");
+	heightmap.saveToFile("../img/landmasses.png");
 
 	return t;
 }

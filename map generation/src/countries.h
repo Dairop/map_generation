@@ -26,7 +26,7 @@ public:
 	void init(Province*& StartingProvince);
 	void calculateSurface();
 	void calculatePower();
-	void FindBorderProvinces();
+	void FindBorderProvinces(); 
 	void checkIfStillExists(std::vector<Country*>& countries);
 	void checkIfProvinceIsSecessing(std::vector<Country*>& countries, sf::Image& map);
 	void expand(sf::Image& map, std::vector<Country*>& countries);

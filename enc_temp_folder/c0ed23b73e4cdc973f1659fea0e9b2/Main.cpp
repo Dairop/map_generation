@@ -283,6 +283,7 @@ void menuEvents() {
 	while (window.pollEvent(event)) {
 		if (event.type == sf::Event::Closed) {
 			window.close();
+			std::terminate();
 			exit;
 		}
 		else if (event.type == sf::Event::Resized) {
